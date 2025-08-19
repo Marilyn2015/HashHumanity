@@ -1,0 +1,10 @@
+{
+  "projects": {
+    "default": "hashhumanity-58b9a",
+    "humanity": "hashhumanity-58b9a",
+    "firebase deploy --only \"database:hashhumanity-58b9a-default-rtdb\"": "hashhumanity-58b9a",
+    "none": "hashhumanity-58b9a"
+  },
+  "targets": {},
+  "etags": {}
+}

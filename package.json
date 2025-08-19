@@ -1,0 +1,46 @@
+
+{
+  "name": "humanity-app",
+  "private": true,
+  "version": "0.0.5",
+  "type": "module",
+  "scripts": {
+    "predev": "kill-port 5190 5191 5192 || exit 0",
+    "dev": "vite --host --port 5190",
+    "dev:auto": "vite --host --port 5190",
+    "dev:5180": "vite --host --port 5180",
+    "dev:api": "nodemon server/index.js",
+    "dev:all": "concurrently -k \"npm:dev\" \"npm:dev:api\"",
+    "build": "vite build",
+    "preview": "vite preview --host --port 5190",
+    "emulate": "npm run build && firebase emulators:start --only hosting",
+    "deploy": "firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only database,storage",
+    "deploy:all": "npm run build && firebase deploy --only hosting,database,storage",
+    "seed": "node ./scripts/seed.mjs"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "firebase": "^10.14.1",
+    "globe.gl": "^2.43.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-globe.gl": "^2.35.0",
+    "react-router-dom": "^6.30.1",
+    "three": "^0.179.1",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "firebase-admin": "^13.4.0",
+    "firebase-tools": "^13.32.0",
+    "kill-port": "^2.0.1",
+    "nodemon": "^3.1.7",
+    "vite": "^5.4.19"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

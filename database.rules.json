@@ -1,0 +1,197 @@
+
+{
+  "rules": {
+    /* Default: locked unless opened below */
+    ".read": "auth != null",
+    ".write": false,
+
+    /* ===== optional allowlist store (not a global gate) ===== */
+    "allowlist": {
+      ".read": false,
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.val() === true || newData.val() === null"
+      }
+    },
+
+    /* ================= USERS ================= */
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid",
+
+        "displayName": { ".validate": "newData.val() === null || (newData.isString() && newData.val().length <= 60)" },
+        "username":    { ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[a-z0-9_]{3,20}$/))" },
+        "bio":         { ".validate": "newData.val() === null || (newData.isString() && newData.val().length <= 5000)" },
+        "avatarUrl":   { ".validate": "newData.val() === null || newData.isString()" },
+        "photoURL":    { ".validate": "newData.val() === null || newData.isString()" },
+        "imageUrl":    { ".validate": "newData.val() === null || newData.isString()" },
+        "links":       { ".validate": "newData.val() === null || newData.hasChildren()", "$i": { ".validate": "newData.val() === null || newData.isString()" } },
+        "followersCount": { ".validate": "newData.val() === null || newData.isNumber()" },
+        "followingCount": { ".validate": "newData.val() === null || newData.isNumber()" },
+        "updatedAt":      { ".validate": "newData.val() === null || newData.isNumber()" }
+      }
+    },
+
+    /* ================= USERNAMES ================= */
+    "usernames": {
+      ".read": true,
+      "$uname": {
+        ".write": "auth != null && (newData.val() === auth.uid || newData.val() === null)"
+      }
+    },
+
+    /* ================= POSTS ================= */
+    "posts": {
+      ".read": "auth != null",
+      ".indexOn": ["createdAt", "authorUid"],
+      "$postId": {
+        ".write": "auth != null && ((!data.exists() && newData.child('ownerUid').val() === auth.uid) || (data.exists() && data.child('ownerUid').val() === auth.uid))",
+
+        "createdAt":         { ".validate": "newData.isNumber()" },
+        "text":              { ".validate": "newData.val() === null || (newData.isString() && newData.val().length <= 5000)" },
+        "content":           { ".validate": "newData.val() === null || (newData.isString() && newData.val().length <= 5000)" },
+        "authorUid":         { ".validate": "newData.val() === null || newData.isString()" },
+        "authorUsername":    { ".validate": "newData.val() === null || newData.isString()" },
+        "authorDisplayName": { ".validate": "newData.val() === null || newData.isString()" },
+        "authorAvatarUrl":   { ".validate": "newData.val() === null || newData.isString()" },
+        "imageUrl":          { ".validate": "newData.val() === null || newData.isString()" },
+        "likeCount":         { ".validate": "newData.val() === null || newData.isNumber()" },
+        "commentCount":      { ".validate": "newData.val() === null || newData.isNumber()" },
+        "uid":               { ".validate": "newData.val() === null || newData.isString()" },
+        "ownerUid":          { ".validate": "newData.val() === null || newData.isString()" }
+      }
+    },
+
+    /* ================= USER→POST MAP ================= */
+    "userPosts": {
+      ".read": "auth != null",
+      "$uid": {
+        "$postId": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.val() === true || newData.val() === null"
+        }
+      }
+    },
+
+    /* ================= LIKES ================= */
+    "likes": {
+      ".read": "auth != null",
+      "$postId": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.val() === true || newData.val() === null"
+        }
+      }
+    },
+
+    /* ================= COMMENTS ================= */
+    "comments": {
+      ".read": "auth != null",
+      "$postId": {
+        "$commentId": {
+          ".write": "auth != null && newData.child('ownerUid').val() === auth.uid",
+          "ownerUid":  { ".validate": "newData.isString() && newData.val() === auth.uid" },
+          "text":      { ".validate": "newData.isString() && newData.val().length <= 3000" },
+          "createdAt": { ".validate": "newData.isNumber()" },
+          "authorUsername":    { ".validate": "newData.val() === null || newData.isString()" },
+          "authorDisplayName": { ".validate": "newData.val() === null || newData.isString()" },
+          "authorAvatarUrl":   { ".validate": "newData.val() === null || newData.isString()" }
+        }
+      }
+    },
+
+    /* ================= FOLLOWING / FOLLOWERS ================= */
+    "following": {
+      ".read": "auth != null",
+      "$uid": {
+        "$targetUid": {
+          ".write": "auth != null && auth.uid === $uid && $uid !== $targetUid",
+          ".validate": "newData.val() === true || newData.isNumber() || newData.val() === null"
+        }
+      }
+    },
+    "followers": {
+      ".read": "auth != null",
+      "$uid": {
+        "$followerUid": {
+          ".write": "auth != null && auth.uid === $followerUid && $uid !== $followerUid",
+          ".validate": "newData.val() === true || newData.isNumber() || newData.val() === null"
+        }
+      }
+    },
+
+    /* ================= INBOX (THREAD METADATA) ================= */
+    "inbox": {
+      "$uid": {
+        /* Only the owner can read their inbox */
+        ".read": "auth != null && auth.uid === $uid",
+
+        "$threadId": {
+          /*
+            Allow writes from either participant:
+            - Owner ($uid) may write their own row for threads that include their UID.
+            - The other participant (auth.uid) may write the owner's row if otherUid == auth.uid
+              and the $threadId is composed of the two UIDs in either order.
+            We also accept partial updates by falling back to existing otherUid.
+          */
+          ".write": "auth != null && ( \
+            (auth.uid === $uid && ( \
+              (newData.child('otherUid').isString() && ( \
+                $threadId === auth.uid + '_' + newData.child('otherUid').val() || \
+                $threadId === newData.child('otherUid').val() + '_' + auth.uid)) || \
+              (data.child('otherUid').isString() && ( \
+                $threadId === auth.uid + '_' + data.child('otherUid').val() || \
+                $threadId === data.child('otherUid').val() + '_' + auth.uid)) \
+            )) || \
+            ((newData.child('otherUid').val() === auth.uid || data.child('otherUid').val() === auth.uid) && ( \
+              $threadId === auth.uid + '_' + $uid || \
+              $threadId === $uid + '_' + auth.uid)) \
+          )",
+
+          "otherUid":      { ".validate": "newData.val() === null || newData.isString()" },
+          "lastMessageAt": { ".validate": "newData.val() === null || newData.isNumber()" },
+          "lastText":      { ".validate": "newData.val() === null || newData.isString()" },
+          "lastSeenAt":    { ".validate": "newData.val() === null || newData.isNumber()" }
+        }
+      }
+    },
+
+    /* ================= MESSAGES (THREADED) ================= */
+    "messages": {
+      "$threadId": {
+        "$msgId": {
+          /* Either participant can read if the thread appears in *their* inbox */
+          ".read":  "auth != null && root.child('inbox').child(auth.uid).child($threadId).exists()",
+          /* Only the sender can write a message */
+          ".write": "auth != null && newData.child('fromUid').val() === auth.uid",
+
+          "fromUid":   { ".validate": "newData.isString() && newData.val() === auth.uid" },
+          "text":      { ".validate": "newData.isString() && newData.val().length <= 5000" },
+          "createdAt": { ".validate": "newData.isNumber()" }
+        }
+      }
+    },
+
+    /* ================= FRIEND REQUESTS / FRIENDSHIPS ================= */
+    "friendRequests": {
+      "$toUid": {
+        "$fromUid": {
+          ".read": "auth != null && (auth.uid === $toUid || auth.uid === $fromUid)",
+          ".write": "auth != null && ((!data.exists() && auth.uid === $fromUid && $fromUid !== $toUid && !root.child('friendships').child($fromUid).child($toUid).exists()) || (data.exists() && (auth.uid === $fromUid || auth.uid === $toUid)))",
+          "createdAt": { ".validate": "newData.isNumber()" }
+        }
+      }
+    },
+    "friendships": {
+      "$uid": {
+        "$otherUid": {
+          ".read": "auth != null && (auth.uid === $uid || auth.uid === $otherUid)",
+          ".write": "auth != null && auth.uid === $uid && (root.child('friendRequests').child($uid).child($otherUid).exists() || root.child('friendRequests').child($otherUid).child($uid).exists())",
+          ".validate": "newData.val() === true"
+        }
+      }
+    }
+  }
+}
+

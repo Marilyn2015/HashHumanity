@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "https://hashhumanity-58b9a.web.app",
+      "http://localhost:1590",
+      "http://127.0.0.1:1590",
+      "http://localhost:5173"
+    ],
+    "method": ["GET", "HEAD", "PUT", "POST", "DELETE", "OPTIONS"],
+    "responseHeader": ["Content-Type", "Authorization", "x-goog-resumable"],
+    "maxAgeSeconds": 3600
+  }
+]
