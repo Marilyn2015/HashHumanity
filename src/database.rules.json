@@ -1,0 +1,154 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid",
+        "displayName":     { ".validate": "newData.val() === null || newData.isString()" },
+        "username":        { ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[a-z0-9_]{3,20}$/))" },
+        "bio":             { ".validate": "newData.val() === null || (newData.isString() && newData.val().length <= 5000)" },
+        "avatarUrl":       { ".validate": "newData.val() === null || newData.isString()" },
+        "photoURL":        { ".validate": "newData.val() === null || newData.isString()" },
+        "imageUrl":        { ".validate": "newData.val() === null || newData.isString()" },
+        "links":           { ".validate": "newData.val() === null || newData.hasChildren()" },
+        "followersCount":  { ".validate": "newData.val() === null || newData.isNumber()" },
+        "followingCount":  { ".validate": "newData.val() === null || newData.isNumber()" },
+        "updatedAt":       { ".validate": "newData.val() === null || newData.isNumber()" }
+      }
+    },
+
+    "usernames": {
+      ".read": true,
+      "$uname": {
+        ".write": "auth != null && ((!data.exists() && newData.val() === auth.uid) || (data.exists() && data.val() === auth.uid && newData.val() === null))",
+        ".validate": "newData.val() === auth.uid || newData.val() === null"
+      }
+    },
+
+    "posts": {
+      ".read": "auth != null",
+      ".indexOn": ["createdAt", "authorUid"],
+      "$postId": {
+        ".write": "auth != null && ((!data.exists() && newData.child('ownerUid').val() === auth.uid) || (data.exists() && data.child('ownerUid').val() === auth.uid))",
+        "ownerUid":          { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "authorUid":         { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "authorUsername":    { ".validate": "newData.val() === null || newData.isString()" },
+        "authorDisplayName": { ".validate": "newData.val() === null || newData.isString()" },
+        "authorAvatarUrl":   { ".validate": "newData.val() === null || newData.isString()" },
+        "text":              { ".validate": "newData.val() === null || (newData.isString() && newData.val().length <= 5000)" },
+        "imageUrl":          { ".validate": "newData.val() === null || newData.isString()" },
+        "createdAt":         { ".validate": "newData.isNumber()" },
+        "likeCount":         { ".validate": "newData.val() === null || newData.isNumber()" },
+        "commentCount":      { ".validate": "newData.val() === null || newData.isNumber()" }
+      }
+    },
+
+    "userPosts": {
+      ".read": "auth != null",
+      "$uid": {
+        "$postId": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.val() === true || newData.val() === null"
+        }
+      }
+    },
+
+    "likes": {
+      ".read": "auth != null",
+      "$postId": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.val() === true || newData.val() === null"
+        }
+      }
+    },
+
+    "comments": {
+      ".read": "auth != null",
+      "$postId": {
+        "$commentId": {
+          ".write": "auth != null && newData.child('ownerUid').val() === auth.uid",
+          "ownerUid":          { ".validate": "newData.isString() && newData.val() === auth.uid" },
+          "authorUsername":    { ".validate": "newData.val() === null || newData.isString()" },
+          "authorDisplayName": { ".validate": "newData.val() === null || newData.isString()" },
+          "authorAvatarUrl":   { ".validate": "newData.val() === null || newData.isString()" },
+          "text":              { ".validate": "newData.isString() && newData.val().length <= 3000" },
+          "createdAt":         { ".validate": "newData.isNumber()" }
+        }
+      }
+    },
+
+    "following": {
+      ".read": "auth != null",
+      "$uid": {
+        "$targetUid": {
+          ".write": "auth != null && auth.uid === $uid && $uid !== $targetUid",
+          ".validate": "newData.val() === true || newData.isNumber() || newData.val() === null"
+        }
+      }
+    },
+
+    "followers": {
+      ".read": "auth != null",
+      "$uid": {
+        "$followerUid": {
+          ".write": "auth != null && auth.uid === $followerUid && $uid !== $followerUid",
+          ".validate": "newData.val() === true || newData.isNumber() || newData.val() === null"
+        }
+      }
+    },
+
+    "userState": {
+      "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" }
+    },
+
+    "inbox": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$threadId": {
+          ".write": "auth != null && auth.uid === $uid",
+          "otherUid":      { ".validate": "newData.isString()" },
+          "lastMessageAt": { ".validate": "newData.isNumber()" },
+          "lastText":      { ".validate": "newData.val() === null || newData.isString()" }
+        }
+      }
+    },
+
+    "messages": {
+      "$threadId": {
+        "$msgId": {
+          ".read": "auth != null && root.child('inbox').child(auth.uid).child($threadId).exists()",
+          ".write": "auth != null && newData.child('fromUid').val() === auth.uid",
+          "fromUid":   { ".validate": "newData.isString() && newData.val() === auth.uid" },
+          "text":      { ".validate": "newData.isString() && newData.val().length <= 5000" },
+          "createdAt": { ".validate": "newData.isNumber()" }
+        }
+      }
+    },
+
+    "friendRequests": {
+      "$toUid": {
+        "$fromUid": {
+          ".read": "auth != null && (auth.uid === $toUid || auth.uid === $fromUid)",
+          ".write": "auth != null && ((!data.exists() && auth.uid === $fromUid && $fromUid !== $toUid && !root.child('friendships').child($fromUid).child($toUid).exists()) || (data.exists() && (auth.uid === $fromUid || auth.uid === $toUid)))",
+          "createdAt": { ".validate": "newData.isNumber()" }
+        }
+      }
+    },
+
+    "friendships": {
+      "$uid": {
+        "$otherUid": {
+          ".read": "auth != null && (auth.uid === $uid || auth.uid === $otherUid)",
+          ".write": "auth != null && auth.uid === $uid && (root.child('friendRequests').child($uid).child($otherUid).exists() || root.child('friendRequests').child($otherUid).child($uid).exists())",
+          ".validate": "newData.val() === true"
+        }
+      }
+    }
+  }
+}
+
+
