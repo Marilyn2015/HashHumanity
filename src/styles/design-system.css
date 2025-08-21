@@ -1,0 +1,17 @@
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 16px var(--shadow-color);
+  padding: 40px;
+  width: 380px;
+}
+.nav-button {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+}
