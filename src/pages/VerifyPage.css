@@ -1,0 +1,21 @@
+/* Center the card in the middle of the viewport */
+.verify-container {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;   /* centers both horizontally + vertically */
+  padding: 24px;
+}
+
+/* Keep content nicely centered */
+.verify-card {
+  width: min(92vw, 720px);
+  text-align: center;
+}
+
+/* Optional: ensure every line is centered */
+.verify-title,
+.verify-text,
+.verify-highlight,
+.verify-footer {
+  text-align: center;
+}

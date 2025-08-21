@@ -1,0 +1,455 @@
+/* ============ THEME ============ */
+:root {
+  --text: #eaf1ff;
+  --muted: #a9b7d6;
+  --line: rgba(255,255,255,.18);
+
+  /* frosted white glass */
+  --glass: rgba(255,255,255,0.08);
+  --glass-strong: rgba(255,255,255,0.12);
+  --glass-border: rgba(255,255,255,.28);
+  --glass-glow: 0 8px 32px rgba(255,255,255,.10), 0 14px 40px rgba(0,0,0,.35);
+
+  --accent: #6ea3ff;
+  --accent2: #8b5cf6;
+}
+
+/* Base page background (spacey) */
+body {
+  background:
+    radial-gradient(120% 160% at 10% 0%, #060b18 0%, #0a1330 55%, #060b18 100%);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============ BACKGROUND LAYERS ============ */
+.bg-globe {
+  position: fixed;
+  inset: 0;
+  z-index: 0;               /* keep it above body bg, below content */
+  pointer-events: none;
+}
+
+/* Show the globe image; also provide a CSS fallback via ::before */
+.bg-globe > img {
+  display: block;
+  position: absolute;
+  left: 50%;
+  top: -6vh;                /* raise the globe a bit */
+  transform: translateX(-50%);
+  width: min(2100px, 140vw);
+  height: auto;
+  opacity: .96;
+  filter: contrast(1.06) saturate(1.08)
+          drop-shadow(0 60px 140px rgba(0,0,0,.55));
+}
+
+/* Fallback in case <img> doesn't load for any reason */
+.bg-globe::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: url("/humanity-globe-2560.webp")
+              center -6vh / min(2100px,140vw) auto no-repeat;
+  opacity: .96;
+  filter: contrast(1.06) saturate(1.08)
+          drop-shadow(0 60px 140px rgba(0,0,0,.55));
+}
+
+/* Subtle star field */
+.bg-stars,
+.bg-stars::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bg-stars {
+  z-index: -1;
+  background:
+    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 70% 30%, rgba(255,255,255,.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 85% 60%, rgba(255,255,255,.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 25% 55%, rgba(255,255,255,.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 55% 10%, rgba(255,255,255,.55) 50%, transparent 51%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  opacity: .55;
+  animation: twinkle 8s ease-in-out infinite;
+}
+
+/* Larger faint stars */
+.bg-stars::before {
+  content: "";
+  background:
+    radial-gradient(2px 2px at 15% 75%, rgba(255,255,255,.22) 50%, transparent 51%),
+    radial-gradient(2px 2px at 90% 25%, rgba(255,255,255,.22) 50%, transparent 51%),
+    radial-gradient(2px 2px at 65% 65%, rgba(255,255,255,.22) 50%, transparent 51%);
+  opacity: .45;
+  animation: twinkle 10s ease-in-out infinite reverse;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: .35; }
+  50% { opacity: .7; }
+}
+
+/* Soft edge darkening */
+.bg-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(70% 60% at 50% 35%, rgba(0,0,0,0) 0%, rgba(0,0,0,.38) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0) 60%, rgba(0,0,0,.45) 100%);
+  pointer-events: none;
+}
+
+/* Spacer so the feed begins below the top of the globe */
+.heroSpacer {
+  height: clamp(240px, 32vh, 440px);   /* adjust if you want more/less reveal */
+}
+
+/* Ensure content is above the bg */
+.shell { position: relative; z-index: 1; }
+
+/* ============ LAYOUT ============ */
+.shell { width: min(1200px, 94vw); margin: 0 auto; }
+.grid {
+  display: grid;
+  grid-template-columns: 240px 1fr 320px;
+  gap: 16px;
+}
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: 200px 1fr; }
+  .grid > .panel:last-child { display: none; }
+}
+@media (max-width: 820px) {
+  .grid { grid-template-columns: 1fr; }
+  .panel.nav { order: 2; }
+}
+
+/* ============ HEADER ============ */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(0,0,0,.40), rgba(0,0,0,.15));
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.headerWrap {
+  width: min(1200px, 94vw);
+  margin: 0 auto;
+  display: grid;
+  align-items: center;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 12px;
+  padding: 10px 0;
+}
+.brand {
+  appearance: none; border: 0; background: transparent;
+  display: inline-flex; align-items: center; gap: 10px;
+  cursor: pointer; color: var(--text); font-weight: 900; letter-spacing: .1em;
+}
+.brandIcon { display:grid; place-items:center; filter: drop-shadow(0 0 10px rgba(142,97,255,.35)); }
+.brandText { font-size: 18px; }
+
+/* ============ SEARCH ============ */
+.searchBox { position: relative; display: flex; gap: 8px; align-items: center; }
+.searchInput {
+  flex: 1;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: var(--text);
+  outline: none;
+  backdrop-filter: blur(12px);
+}
+.searchInput::placeholder { color: rgba(234,241,255,.65); }
+.searchBtn {
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.10));
+  color: #0d152e;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: var(--glass-glow);
+}
+.searchList {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: rgba(12,18,40,.8);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 28px rgba(0,0,0,.45);
+  padding: 6px;
+  max-height: 300px; overflow: auto;
+}
+.searchItem {
+  display: grid; grid-template-columns: 28px auto auto; gap: 8px; align-items: center;
+  padding: 8px; border-radius: 10px; cursor: pointer;
+}
+.searchItem:hover { background: rgba(255,255,255,.06); }
+
+/* ============ PANELS & CARDS (Frosted Glass) ============ */
+.panel,
+.card {
+  background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.06));
+  background-clip: padding-box;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-glow);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  color: var(--text);
+}
+
+.panel { padding: 12px; }
+.card { padding: 12px; }
+
+/* Left nav */
+.panel.nav .item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.panel.nav .item:hover { background: rgba(255,255,255,.10); }
+
+/* ============ BUTTONS / INPUTS ============ */
+.btn {
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.10));
+  color: #0d152e;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: var(--glass-glow);
+}
+.btn:hover { filter: brightness(1.05); }
+.btn[disabled] { opacity: .6; cursor: not-allowed; }
+
+.btnPrimary {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  color: white;
+  border: none;
+  box-shadow: 0 0 22px rgba(110,163,255,.35);
+}
+
+.textarea {
+  width: 100%;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--text);
+  padding: 10px 12px;
+  resize: vertical;
+  outline: none;
+  backdrop-filter: blur(12px);
+}
+
+/* ============ COMPOSER ============ */
+.composerTop {
+  display: grid; grid-template-columns: 42px 1fr; gap: 10px; align-items: start;
+}
+.compRow { display: flex; gap: 8px; margin-top: 8px; }
+.preview { margin-top: 10px; display: flex; gap: 10px; align-items: center; }
+.preview img { max-height: 200px; border-radius: 10px; border: 1px solid var(--line); }
+
+/* ============ POSTS ============ */
+.feedCol { display: grid; gap: 12px; }
+.postHead { display: flex; align-items: center; }
+.userBtn {
+  display: grid; grid-template-columns: 42px auto; gap: 10px; align-items: center;
+  background: transparent; border: 0; color: inherit; text-align: left; cursor: pointer;
+}
+.userNames .display { font-weight: 900; }
+.userNames .user { opacity: .72; font-size: 12px; }
+
+.postBody { white-space: pre-wrap; margin-top: 8px; line-height: 1.5; }
+.postImage {
+  margin-top: 10px;
+  width: 100%; max-height: 580px; object-fit: cover;
+  border-radius: 14px; border: 1px solid var(--line);
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+}
+
+.actions { display: flex; gap: 8px; margin-top: 8px; }
+.pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  cursor: pointer;
+}
+.pill.on { background: rgba(255,100,130,.22); border-color: rgba(255,100,130,.45); }
+
+/* ============ COMMENTS ============ */
+.comments { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.comment { display: grid; grid-template-columns: 28px auto; gap: 10px; }
+.commentRow { display: flex; gap: 8px; margin-top: 8px; }
+.commentInput {
+  flex: 1;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 8px 10px;
+  outline: none;
+  backdrop-filter: blur(12px);
+}
+
+/* ============ RIGHT RAIL ============ */
+.rightTitle { font-weight: 900; margin-bottom: 8px; }
+.sugg { display: grid; gap: 8px; }
+.suggItem {
+  display: grid; grid-template-columns: 34px auto auto; gap: 10px; align-items: center;
+  border: 1px solid var(--line); border-radius: 12px; padding: 8px;
+  background: rgba(255,255,255,.05);
+}
+.suggBtn { justify-self: end; }
+
+/* ============ TOASTS ============ */
+.toastWrap {
+  position: fixed; right: 16px; bottom: 16px; z-index: 5;
+  display: grid; gap: 8px;
+}
+.toast {
+  background: rgba(20,24,45,.86);
+  border: 1px solid rgba(255,255,255,.18);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.45);
+}
+
+/* ============ MISC AVATAR FALLBACK ============ */
+.avatarFallback,
+.searchFallback {
+  display: grid; place-items: center;
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08));
+  color: #0d152e; font-weight: 900;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+}
+
+/* ============ UTILS ============ */
+.muted { color: var(--muted); }
+
+/* ============ Mobile-first Universe styles ============ */
+:root{
+  --bg:#0b1220;
+  --text:#e6f0ff;
+  --muted:#a3b4cc;
+  --line:rgba(255,255,255,.14);
+  --panel:rgba(255,255,255,.06);
+  --card:rgba(255,255,255,.08);
+  --brand:#60a5fa;
+}
+
+*{box-sizing:border-box}
+html,body,#root{height:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
+}
+
+/* ---------- Background visual ---------- */
+.bg-globe{position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden}
+.bg-globe > img{width:100%; height:100%; object-fit:cover; filter:saturate(.9) brightness(.65)}
+.bg-stars{position:absolute; inset:0; background-image:radial-gradient(transparent 60%, rgba(96,165,250,.12) 100%)}
+.bg-vignette{position:absolute; inset:0; background:radial-gradient(1200px 600px at 50% -10%, transparent 30%, rgba(0,0,0,.65) 80%)}
+
+/* ---------- Header ---------- */
+.header{position:sticky; top:0; z-index:20; border-bottom:1px solid var(--line); background:rgba(11,18,32,.65); backdrop-filter:saturate(120%) blur(10px)}
+.headerWrap{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px}
+.brand{display:flex; align-items:center; gap:10px; border:1px solid var(--line); background:var(--panel); color:var(--text); padding:8px 10px; border-radius:12px; cursor:pointer}
+.brandText{font-weight:900; letter-spacing:.08em}
+
+/* ---------- Shell / grid ---------- */
+.shell{max-width:1200px; margin:0 auto; padding:12px}
+.grid{display:grid; gap:16px; grid-template-columns:1fr}
+
+/* ---------- Panels & cards ---------- */
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  box-shadow:0 6px 24px rgba(0,0,0,.25);
+}
+
+/* Left nav turns into a horizontal scroller on mobile */
+.panel.nav{
+  display:flex; align-items:center; gap:10px; overflow-x:auto;
+  scrollbar-width:none; -ms-overflow-style:none;
+}
+.panel.nav::-webkit-scrollbar{display:none}
+.panel.nav .item{
+  white-space:nowrap; padding:10px 12px; border:1px solid var(--line);
+  background:rgba(255,255,255,.04); border-radius:999px; cursor:pointer; font-weight:800;
+}
+.panel.nav .item:active{transform:translateY(1px)}
+
+/* Feed */
+.feedCol{display:grid; gap:14px}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  box-shadow:0 10px 36px rgba(0,0,0,.28);
+}
+
+.postHead{display:flex; flex-direction:column; gap:4px; margin-bottom:8px}
+.postHead .user{color:var(--muted); font-size:12px}
+.postBody{line-height:1.55; white-space:pre-wrap}
+.postImage{margin-top:10px; width:100%; height:auto; border-radius:12px; border:1px solid var(--line)}
+
+/* Toasts */
+.toastWrap{position:fixed; bottom:14px; left:14px; right:14px; display:grid; gap:8px; z-index:30}
+.toast{background:rgba(0,0,0,.6); border:1px solid var(--line); padding:10px 12px; border-radius:10px}
+
+/* Spacer under sticky header */
+.heroSpacer{height:8px}
+
+/* ---------- Buttons (shared) ---------- */
+.btn{
+  appearance:none; border:1px solid var(--line);
+  background:rgba(255,255,255,.06); color:var(--text);
+  padding:10px 12px; border-radius:10px; cursor:pointer; font-weight:800;
+}
+.btnPrimary{border-color:rgba(96,165,250,.45); box-shadow:0 0 12px rgba(96,165,250,.25)}
+
+/* ---------- Right rail ---------- */
+.rightTitle{font-weight:900; margin-bottom:8px; letter-spacing:.04em}
+
+/* ============ Breakpoints ============ */
+
+/* ≥ 700px: give posts a little breathing room */
+@media (min-width:700px){
+  .shell{padding:16px}
+  .card{padding:16px}
+}
+
+/* ≥ 900px: switch to 3 columns */
+@media (min-width:900px){
+  .grid{grid-template-columns:220px 1fr 300px; align-items:start}
+  .panel.nav{display:block}
+  .panel.nav .item{
+    display:block; border-radius:10px; margin:6px 0; width:100%; text-align:left;
+  }
+  .toastWrap{left:auto; right:18px; width:360px}
+}
+
+/* ≥ 1200px: slightly wider rails */
+@media (min-width:1200px){
+  .grid{grid-template-columns:260px 1fr 320px}
+}
