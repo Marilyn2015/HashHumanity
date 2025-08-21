@@ -1,0 +1,137 @@
+:root{
+  --brand: #60a5fa;
+  --line: rgba(255,255,255,.22);
+  --ink: #eaf2ff;
+  --inkDim: #cfe0ff;
+  --bg: #0b1220;
+  --card: rgba(255,255,255,.10);
+  --cardEdge: rgba(255,255,255,.24);
+  --glowSoft: 0 0 16px rgba(96,165,250,.25);
+}
+
+*{ box-sizing:border-box }
+html,body,#root{ height:100% }
+body{
+  margin:0;
+  color:var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global background so every page has the same look */
+body::before{
+  content:"";
+  position:fixed; inset:0;
+  background:
+    radial-gradient(1200px 800px at 60% -10%, rgba(96,165,250,.18), transparent 60%),
+    radial-gradient(1000px 600px at 10% 120%, rgba(139,92,246,.14), transparent 60%),
+    url("/humanity-globe-2560%20(1).webp") center/cover no-repeat fixed;
+  filter:saturate(120%);
+  z-index:-2;
+}
+body::after{
+  content:"";
+  position:fixed; inset:0;
+  background:
+    radial-gradient(50% 50% at 50% 20%, rgba(0,0,0,.25), transparent 60%),
+    linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.55));
+  z-index:-1;
+}
+
+/* Layout shells used across pages */
+.shell{ max-width:1100px; margin:0 auto; padding:0 16px }
+.heroSpacer{ height:54px }
+
+/* Header */
+.header{
+  position:sticky; top:0; z-index:10;
+  backdrop-filter: blur(10px);
+  background: rgba(11,18,32,.45);
+  border-bottom:1px solid var(--line);
+}
+.headerWrap{
+  height:54px;
+  display:flex; align-items:center; gap:12px;
+  padding:0 14px;
+}
+.brand{ display:flex; align-items:center; gap:8px; background:none; border:0; color:var(--ink); cursor:pointer }
+.brandText{ font-weight:800; letter-spacing:.5px }
+
+/* Grid with sidebars */
+.grid{
+  display:grid;
+  grid-template-columns: 220px 1fr 280px;
+  gap:16px;
+  margin: 18px 0 28px;
+}
+.panel{
+  border:1px solid var(--line);
+  background:var(--card);
+  border-radius:12px;
+  padding:12px;
+  box-shadow: var(--glowSoft);
+}
+.panel.nav .item{
+  padding:10px 12px; border-radius:8px; cursor:pointer;
+}
+.panel.nav .item:hover{ background:rgba(255,255,255,.06) }
+
+/* Cards & feed */
+.card{
+  border:1px solid var(--cardEdge);
+  border-radius:12px;
+  background: rgba(255,255,255,.08);
+  box-shadow: var(--glowSoft);
+  padding:14px;
+}
+.feedCol{ display:grid; gap:12px }
+
+.postImage{
+  width:100%; border-radius:10px; border:1px solid var(--line); margin-top:8px;
+}
+
+/* Buttons / inputs */
+.btn{
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.08);
+  color: var(--ink);
+  padding:8px 12px;
+  border-radius:8px; cursor:pointer; font-weight:700;
+}
+.btnPrimary{
+  border-color: rgba(96,165,250,.6);
+  box-shadow: 0 0 12px rgba(96,165,250,.25);
+}
+.textarea, .commentInput, .searchInput, input, textarea, select{
+  width:100%;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.10);
+  color:var(--ink);
+  border-radius:10px;
+  padding:10px 12px;
+  outline:none;
+}
+
+/* Toasts */
+.toastWrap{
+  position:fixed; right:14px; bottom:14px; display:grid; gap:8px; z-index:50;
+}
+.toast{
+  background:rgba(11,18,32,.9);
+  border:1px solid var(--line);
+  color:var(--ink);
+  padding:10px 12px; border-radius:10px;
+}
+
+/* Right rail bits */
+.rightTitle{ font-weight:900; letter-spacing:.4px; margin-bottom:8px }
+
+/* Responsive */
+@media (max-width: 1000px){
+  .grid{ grid-template-columns: 1fr 1fr; }
+  .panel.nav{ display:none }
+}
+@media (max-width: 720px){
+  .grid{ grid-template-columns: 1fr; }
+}
