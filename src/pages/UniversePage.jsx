@@ -59,6 +59,16 @@ async function getUserProfile(uid) {
 }
 const uniqueByUid = (rows) => Array.from(new Map(rows.map((r) => [r.uid, r])).values());
 
+/* force HTTPS to prevent mixed content */
+const httpsify = (u) => {
+  if (!u) return u;
+  try {
+    const s = String(u);
+    if (s.startsWith("http://")) return s.replace(/^http:\/\//i, "https://");
+    return s;
+  } catch { return u; }
+};
+
 /* ======== simple linkifier (URLs → <a>) ======== */
 function LinkifiedText({ text = "" }) {
   const urlRe = /((https?:\/\/|www\.)[^\s<]+)/gi;
@@ -280,6 +290,20 @@ export default function UniversePage() {
   const location = useLocation();
   const params = useParams();
   const [toasts, toastApi] = useToasts();
+  const [lightboxSrc, setLightboxSrc] = useState("");
+  const openLightbox = useCallback((src) => {
+    if (!src) return;
+    try {
+      const s = String(src || "");
+      if (!s) return;
+      // force https if protocol-relative or plain http
+      const fixed = s.startsWith("http://") ? s.replace(/^http:\/\//i, "https://") : s;
+      setLightboxSrc(fixed);
+    } catch {
+      setLightboxSrc(src);
+    }
+  }, []);
+  const closeLightbox = useCallback(() => setLightboxSrc(""), []);
 
   const { followUnread, messageUnread, markFollowersSeen, markMessagesSeen } =
     useUniverseBadgesPersisted();
@@ -759,7 +783,7 @@ export default function UniversePage() {
             <section className="card">
               <div className="composerTop">
                 {me?.avatarUrl ? (
-                  <img src={me.avatarUrl} alt="" style={avatarImgStyle} />
+                  <img src={httpsify(me.avatarUrl)} alt="" style={avatarImgStyle} />
                 ) : (
                   <div className="avatarFallback" style={{ ...avatarImgStyle, display: "grid", placeItems: "center" }}>
                     👤
@@ -806,11 +830,12 @@ export default function UniversePage() {
             {(filteredPosts.slice(0, visibleCount)).map((p) => {
               const likeCount = likes[p.id]?.count || 0;
               const youLiked = likes[p.id]?.you || false;
-              const avatarSrc =
+              const avatarSrc = httpsify(
                 p.authorAvatarUrl ||
                 (p.ownerUid && userCache[p.ownerUid]?.avatarUrl) ||
                 (p.authorUid && userCache[p.authorUid]?.avatarUrl) ||
-                "";
+                ""
+              );
               const uname = usernameForPost(p, userCache);
               const dispName = displayNameForPost(p, userCache);
 
@@ -821,7 +846,12 @@ export default function UniversePage() {
                   <div className="postHead">
                     <button className="userBtn" onClick={() => onUserHeaderClick(p)}>
                       {avatarSrc ? (
-                        <img src={avatarSrc} alt="" style={avatarImgStyle} />
+                        <img
+                          src={avatarSrc}
+                          alt=""
+                          style={{ ...avatarImgStyle, cursor: "zoom-in" }}
+                          onClick={(e) => { e.stopPropagation(); openLightbox(avatarSrc); }}
+                        />
                       ) : (
                         <div className="avatarFallback" style={{ ...avatarImgStyle, display: "grid", placeItems: "center" }}>
                           {initialsFrom(uname)}
@@ -846,8 +876,10 @@ export default function UniversePage() {
                   {!isRepost && p.imageUrl && (
                     <img
                       className="postImage"
-                      src={p.imageUrl}
+                      src={httpsify(p.imageUrl)}
                       alt="post media"
+                      onClick={() => openLightbox(p.imageUrl)}
+                      style={{ cursor: "zoom-in" }}
                       onError={(e) => { e.currentTarget.style.display = "none"; }}
                       loading="lazy"
                       decoding="async"
@@ -856,7 +888,7 @@ export default function UniversePage() {
 
                   {/* Embedded original for repost */}
                   {isRepost && (
-                    <OriginalPostEmbed data={p.original} userCache={userCache} />
+                    <OriginalPostEmbed data={p.original} userCache={userCache} onOpenImage={openLightbox} />
                   )}
 
                   <div className="actions">
@@ -864,9 +896,24 @@ export default function UniversePage() {
                       ♥ {likeCount}
                     </button>
                     <button className="pill" onClick={() => repost(isRepost ? { id: p.repostOf } : p)}>↻ Share</button>
+                    <button
+                      className="pill"
+                      onClick={async () => {
+                        try {
+                          const url = `${window.location.origin}/post/${p.id}`;
+                          await navigator.clipboard.writeText(url);
+                          toastApi.pushToast("Link copied");
+                        } catch {
+                          toastApi.pushToast("Copy failed");
+                        }
+                      }}
+                      title="Copy link"
+                    >
+                      🔗 Copy
+                    </button>
                   </div>
 
-                  <Comments postId={p.id} avatarStyle={cmtImgStyle} />
+                  <Comments postId={p.id} avatarStyle={cmtImgStyle} onOpenImage={openLightbox} />
                   <CommentBox postId={p.id} me={me} authUser={authUser} toastApi={toastApi} />
                 </article>
               );
@@ -907,7 +954,7 @@ export default function UniversePage() {
                 {suggestions.map((s) => (
                   <div key={`sugg-${s.uid}`} className="suggItem">
                     {s.avatarUrl ? (
-                      <img src={s.avatarUrl} alt="" style={suggImgStyle} />
+                      <img src={httpsify(s.avatarUrl)} alt="" style={suggImgStyle} />
                     ) : (
                       <div className="avatarFallback" style={{ ...suggImgStyle, display: "grid", placeItems: "center" }}>
                         {initialsFrom(s.username)}
@@ -926,12 +973,35 @@ export default function UniversePage() {
           </aside>
         </div>
       </div>
+
+      {/* Mobile top icons (profile + discussions) */}
+      <MobileTopBar
+        me={me}
+        onProfile={() => me ? navigate(`/profile/${me.uid}`) : navigate("/login")}
+        onDiscuss={() => navigate("/discussions")}
+        onLogin={() => navigate("/login")}
+      />
+
+      {/* Mobile bottom nav (messages, alerts, settings, post) */}
+      <BottomNav
+        onMessages={() => navigate("/messages")}
+        onNotifs={() => navigate("/notifications")}
+        onSettings={() => navigate("/settings")}
+        onPost={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      />
+
+      {/* Lightbox */}
+      {lightboxSrc && (
+        <div className="lightbox" onClick={closeLightbox}>
+          <img src={lightboxSrc} alt="" className="lightboxImg" />
+        </div>
+      )}
     </>
   );
 }
 
 /* ===== embedded original post preview for reposts ===== */
-function OriginalPostEmbed({ data, userCache }) {
+function OriginalPostEmbed({ data, userCache, onOpenImage }) {
   if (!data) {
     return <div className="card" style={{ padding: 10, opacity: 0.8 }}>Original post unavailable.</div>;
   }
@@ -939,16 +1009,17 @@ function OriginalPostEmbed({ data, userCache }) {
   const disp = safeDisplayName(data.authorDisplayName) ||
                (data.ownerUid && safeDisplayName(userCache[data.ownerUid]?.displayName)) ||
                (uname ? `@${uname}` : "@someone");
-  const av =
+  const av = httpsify(
     data.authorAvatarUrl ||
     (data.ownerUid && userCache[data.ownerUid]?.avatarUrl) ||
-    "";
+    ""
+  );
 
   return (
     <div className="card" style={{ background: "var(--panel)", padding: 10, border: "1px solid var(--line)" }}>
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 6 }}>
         {av ? (
-          <img src={av} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--line)" }} />
+          <img src={av} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--line)", cursor: "zoom-in" }} onClick={() => onOpenImage && onOpenImage(av)} />
         ) : (
           <div style={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", border: "1px solid var(--line)" }}>
             {initialsFrom(uname)}
@@ -961,8 +1032,10 @@ function OriginalPostEmbed({ data, userCache }) {
       {data.imageUrl && (
         <img
           className="postImage"
-          src={data.imageUrl}
+          src={httpsify(data.imageUrl)}
           alt="post media"
+          onClick={() => onOpenImage && onOpenImage(data.imageUrl)}
+          style={{ cursor: "zoom-in" }}
           onError={(e) => { e.currentTarget.style.display = "none"; }}
           loading="lazy"
           decoding="async"
@@ -1012,9 +1085,9 @@ function Header({ onAbout }) {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {me?.avatarUrl ? (
               <img
-                src={me.avatarUrl}
+                src={httpsify(me.avatarUrl)}
                 alt=""
-                style={avatarStyle}
+                style={{ ...avatarStyle, cursor: "zoom-in" }}
                 onClick={() => me && navigate(`/profile/${me.uid}`)}
                 title="Open your profile"
               />
@@ -1120,7 +1193,7 @@ function Search() {
             >
               {r.avatarUrl ? (
                 <img
-                  src={r.avatarUrl}
+                  src={httpsify(r.avatarUrl)}
                   className="searchAv"
                   alt=""
                   style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", objectPosition: "center 20%" }}
@@ -1138,9 +1211,45 @@ function Search() {
   );
 }
 
+/* ================= Mobile top bar (profile + discussions) ================= */
+function MobileTopBar({ me, onProfile, onDiscuss, onLogin }) {
+  return (
+    <div className="mobileTopBar">
+      <button className="mobileTopBtn" onClick={onDiscuss} title="Discussions">🗣️</button>
+      <div style={{ flex: 1 }} />
+      {me?.avatarUrl ? (
+        <img
+          src={me.avatarUrl}
+          alt=""
+          className="mobileTopAvatar"
+          onClick={onProfile}
+        />
+      ) : (
+        <button className="mobileTopBtn" onClick={onLogin} title="Profile">👤</button>
+      )}
+    </div>
+  );
+}
+
+/* ================= Mobile bottom nav (messages, alerts, settings, post) ================= */
+function BottomNav({ onMessages, onNotifs, onSettings, onPost }) {
+  return (
+    <nav className="bottomNav" aria-label="Primary">
+      <div className="bottomBar">
+        <button className="bottomBtn" onClick={onMessages}><span>💬</span><span className="bottomCap">Messages</span></button>
+        <button className="bottomBtn" onClick={onNotifs}><span>🔔</span><span className="bottomCap">Alerts</span></button>
+        <button className="bottomBtn" onClick={onSettings}><span>⚙️</span><span className="bottomCap">Settings</span></button>
+        <button className="bottomBtn" onClick={onPost}><span>✍️</span><span className="bottomCap">Post</span></button>
+      </div>
+    </nav>
+  );
+}
+
 /* ================= comments ================= */
-function Comments({ postId, avatarStyle }) {
+function Comments({ postId, avatarStyle, onOpenImage }) {
+  const { authUser } = useMe();
   const [list, setList] = useState([]);
+  const [likesMap, setLikesMap] = useState({}); // commentId -> {count, you}
   useEffect(() => {
     const cRef = dbRef(db, `comments/${postId}`);
     const cb = (snap) => {
@@ -1153,6 +1262,33 @@ function Comments({ postId, avatarStyle }) {
     return () => off(cRef, "value", cb);
   }, [postId]);
 
+  useEffect(() => {
+    const lRef = dbRef(db, `commentLikes/${postId}`);
+    const cb = (snap) => {
+      const v = snap.val() || {};
+      const next = {};
+      Object.keys(v).forEach((cid) => {
+        const by = v[cid] || {};
+        next[cid] = {
+          count: Object.keys(by).length,
+          you: authUser ? !!by[authUser.uid] : false,
+        };
+      });
+      setLikesMap(next);
+    };
+    onValue(lRef, cb);
+    return () => off(lRef, "value", cb);
+  }, [postId, authUser?.uid]);
+
+  const toggleCommentLike = async (commentId) => {
+    if (!authUser?.uid) return;
+    const ref = dbRef(db, `commentLikes/${postId}/${commentId}/${authUser.uid}`);
+    const you = likesMap[commentId]?.you;
+    try {
+      you ? await remove(ref) : await dbSet(ref, true);
+    } catch {}
+  };
+
   if (!list.length) return null;
 
   return (
@@ -1160,7 +1296,7 @@ function Comments({ postId, avatarStyle }) {
       {list.map((c) => (
         <li key={`c-${c.id}`} className="comment">
           {c.authorAvatarUrl ? (
-            <img src={c.authorAvatarUrl} className="cAv" alt="" style={avatarStyle} />
+            <img src={c.authorAvatarUrl} className="cAv" alt="" style={{ ...avatarStyle, cursor: c.authorAvatarUrl ? "zoom-in" : "default" }} onClick={() => onOpenImage && onOpenImage(c.authorAvatarUrl)} />
           ) : (
             <div className="fallback" style={{ ...avatarStyle, display: "grid", placeItems: "center" }}>
               {initialsFrom(c.authorUsername)}
@@ -1175,6 +1311,11 @@ function Comments({ postId, avatarStyle }) {
               <span style={{ opacity: 0.65, fontSize: 12 }}>{timeAgo(c.createdAt)}</span>
             </div>
             <div>{c.text}</div>
+            <div style={{ marginTop: 6 }}>
+              <button className={`pill ${likesMap[c.id]?.you ? "on" : ""}`} onClick={() => toggleCommentLike(c.id)}>
+                ♥ {likesMap[c.id]?.count || 0}
+              </button>
+            </div>
           </div>
         </li>
       ))}
