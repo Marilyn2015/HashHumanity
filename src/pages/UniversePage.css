@@ -496,3 +496,54 @@ body{
   .shell > .grid { grid-template-columns: 1fr; }
   .panel.nav { order: -1; margin-bottom: 12px; }
 }
+
+/* ============ Mobile top bar ============ */
+.mobileTopBar {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 6;
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+.mobileTopBtn {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  padding: 8px;
+  border-radius: 10px;
+  font-weight: 800;
+}
+.mobileTopAvatar {
+  width: 32px; height: 32px; border-radius: 50%; object-fit: cover;
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+}
+@media (max-width: 760px) {
+  .mobileTopBar { display: flex; }
+}
+
+/* ============ Bottom mobile nav ============ */
+.bottomNav{
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+  background: rgba(11,18,32,.88);
+  backdrop-filter: saturate(120%) blur(10px);
+  border-top: 1px solid var(--line);
+  padding: 6px;
+}
+.bottomBar{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; max-width:720px; margin:0 auto }
+.bottomBtn{ display:grid; place-items:center; gap:4px; border:1px solid var(--line); background:rgba(255,255,255,.06); color:var(--text); padding:8px; border-radius:10px; font-weight:800; min-height:44px }
+.bottomCap{ font-size:11px; opacity:.9 }
+@media (min-width: 900px){ .bottomNav{ display:none } }
+
+/* ============ Lightbox ============ */
+.lightbox{
+  position: fixed; inset: 0; z-index: 7;
+  background: rgba(0,0,0,.85);
+  display: grid; place-items: center;
+  animation: lbIn .12s ease-out;
+}
+.lightboxImg{ max-width: min(96vw, 1200px); max-height: 88vh; border-radius: 12px; border: 1px solid var(--line); box-shadow: 0 20px 80px rgba(0,0,0,.55) }
+@keyframes lbIn { from { opacity: 0 } to { opacity: 1 } }
